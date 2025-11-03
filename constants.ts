@@ -1,6 +1,6 @@
 import type { MonthData } from './types';
 
-// The user specified April 31st, 2026. Since April only has 30 days, we'll use April 30th.
+// The user specified April 30th.
 export const DUE_DATE: string = '2026-04-30T23:59:59';
 
 // The user specified the pregnancy started at the beginning of August 2025.
