@@ -1,0 +1,5 @@
+{
+  "name": "Baby Arrival Countdown",
+  "description": "A cute and simple web application to count down the days, hours, minutes, and seconds until a baby's due date. It also features a visual 9-month progress tracker.",
+  "requestFramePermissions": []
+}
