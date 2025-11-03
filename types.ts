@@ -9,4 +9,5 @@ export interface TimeLeft {
 export interface MonthData {
   monthNumber: number;
   imageUrl: string;
+  description: string;
 }

@@ -4,6 +4,7 @@ import React, { useRef } from 'react';
 interface MonthCardProps {
   monthNumber: number;
   imageUrl: string;
+  description: string;
   isCurrent: boolean;
   isPast: boolean;
   onImageUpload: (monthNumber: number, imageUrl: string) => void;
@@ -17,15 +18,19 @@ const CameraIcon: React.FC = () => (
 );
 
 
-const MonthCard: React.FC<MonthCardProps> = ({ monthNumber, imageUrl, isCurrent, isPast, onImageUpload }) => {
+const MonthCard: React.FC<MonthCardProps> = ({ monthNumber, imageUrl, description, isCurrent, isPast, onImageUpload }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const cardBaseClasses = 'flex flex-col items-center justify-center space-y-2 p-3 rounded-lg transition-all duration-300 ease-in-out cursor-pointer group';
+  const currentClasses = 'bg-[var(--accent-highlight)] scale-110 shadow-lg ring-4 ring-[var(--accent-ring)]';
+  const defaultClasses = 'bg-[var(--accent-secondary)]';
+  const pastClasses = 'opacity-70';
+  const futureClasses = 'opacity-100';
+
   const cardClasses = [
-    'flex', 'flex-col', 'items-center', 'justify-center', 'space-y-2',
-    'p-3', 'rounded-lg', 'transition-all', 'duration-300', 'ease-in-out', 'cursor-pointer',
-    'group', // for hover effects
-    isCurrent ? 'bg-pink-200 scale-110 shadow-lg ring-4 ring-pink-300' : 'bg-slate-100',
-    isPast ? 'opacity-70' : 'opacity-100'
+    cardBaseClasses,
+    isCurrent ? currentClasses : defaultClasses,
+    isPast ? pastClasses : futureClasses
   ].join(' ');
   
   const handleCardClick = () => {
@@ -46,7 +51,7 @@ const MonthCard: React.FC<MonthCardProps> = ({ monthNumber, imageUrl, isCurrent,
   };
 
   return (
-    <div className={cardClasses} onClick={handleCardClick} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && handleCardClick()} aria-label={`Upload image for month ${monthNumber}`}>
+    <div className={cardClasses} onClick={handleCardClick} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && handleCardClick()} aria-label={`Month ${monthNumber}: ${description}. Click to upload image.`}>
       <input
         type="file"
         ref={fileInputRef}
@@ -58,16 +63,21 @@ const MonthCard: React.FC<MonthCardProps> = ({ monthNumber, imageUrl, isCurrent,
       <div className="relative">
         <img
           src={imageUrl}
-          alt={`Baby development month ${monthNumber}`}
+          alt={`Baby at month ${monthNumber}, ${description}`}
           className="w-16 h-16 rounded-full object-cover border-2 border-white"
         />
         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center transition-all duration-300 rounded-full">
           <CameraIcon />
         </div>
       </div>
-      <span className={`font-bold text-sm ${isCurrent ? 'text-white' : 'text-slate-500'}`}>
-        Month {monthNumber}
-      </span>
+      <div className="text-center">
+        <p className={`font-bold text-sm ${isCurrent ? 'text-white' : 'text-[var(--text-secondary)]'}`}>
+          Month {monthNumber}
+        </p>
+        <p className={`text-xs italic ${isCurrent ? 'text-white/90' : 'text-[var(--text-secondary)] opacity-80'}`}>
+          {description}
+        </p>
+      </div>
     </div>
   );
 };

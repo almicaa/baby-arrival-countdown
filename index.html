@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -21,6 +20,63 @@
       }
       .animate-number-update {
         animation: scale-up-and-down 0.5s ease-in-out;
+      }
+      
+      /* New Animations for Easter Egg */
+      @keyframes celebrate-animation {
+        0% { transform: scale(0.5); opacity: 0; }
+        80% { transform: scale(1.05); opacity: 1; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+
+      .animate-celebrate {
+        animation: celebrate-animation 1s ease-out forwards;
+      }
+
+      @keyframes fall {
+        0% {
+          transform: translateY(-20px) rotateZ(0deg);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(250px) rotateZ(720deg);
+          opacity: 0;
+        }
+      }
+
+      .confetti-piece {
+        position: absolute;
+        width: 8px;
+        height: 16px;
+        top: 0;
+        opacity: 0;
+        animation-name: fall;
+        animation-timing-function: linear;
+        animation-iteration-count: infinite;
+        will-change: transform, opacity;
+      }
+
+      /* Background Particle Animation */
+      .particle {
+        position: absolute;
+        bottom: -50px; /* Start just below the viewport */
+        border-radius: 50%;
+        opacity: 0;
+        animation-name: float;
+        animation-timing-function: linear;
+        animation-iteration-count: infinite;
+        will-change: transform, opacity;
+      }
+
+      @keyframes float {
+        from {
+          transform: translateY(0);
+          opacity: 0.6;
+        }
+        to {
+          transform: translateY(-110vh); /* Move up far beyond the viewport */
+          opacity: 0;
+        }
       }
     </style>
   <script type="importmap">

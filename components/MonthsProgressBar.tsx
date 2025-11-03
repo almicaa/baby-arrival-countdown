@@ -46,6 +46,7 @@ const MonthsProgressBar: React.FC<MonthsProgressBarProps> = ({ currentMonth }) =
           key={month.monthNumber}
           monthNumber={month.monthNumber}
           imageUrl={month.imageUrl}
+          description={month.description}
           isCurrent={month.monthNumber === currentMonth}
           isPast={month.monthNumber < currentMonth}
           onImageUpload={handleImageUpload}
