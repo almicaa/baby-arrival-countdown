@@ -98,7 +98,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex flex-col items-center justify-center p-4 overflow-hidden relative transition-colors duration-500">
       <BackgroundParticles />
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-4 right-4 z-20">
         <ThemeSelector onThemeChange={handleThemeChange} currentThemeName={currentTheme.name} />
       </div>
 
