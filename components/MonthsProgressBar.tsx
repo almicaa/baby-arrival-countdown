@@ -41,7 +41,7 @@ const MonthsProgressBar: React.FC<MonthsProgressBarProps> = ({ currentMonth }) =
 
   return (
     <div className="grid grid-cols-3 md:grid-cols-9 gap-4">
-      {months.map((month) => (
+      {months.map((month, index) => (
         <MonthCard
           key={month.monthNumber}
           monthNumber={month.monthNumber}
@@ -50,6 +50,7 @@ const MonthsProgressBar: React.FC<MonthsProgressBarProps> = ({ currentMonth }) =
           isCurrent={month.monthNumber === currentMonth}
           isPast={month.monthNumber < currentMonth}
           onImageUpload={handleImageUpload}
+          animationStyle={{ animationDelay: `${index * 75}ms` }}
         />
       ))}
     </div>

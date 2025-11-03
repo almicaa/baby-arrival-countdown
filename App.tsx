@@ -102,7 +102,7 @@ const App: React.FC = () => {
         <ThemeSelector onThemeChange={handleThemeChange} currentThemeName={currentTheme.name} />
       </div>
 
-      <div className="w-full max-w-4xl mx-auto text-center space-y-8 z-10">
+      <div className="w-full max-w-4xl mx-auto text-center space-y-8 z-10 pt-16 md:pt-0">
         
         <header className="space-y-4">
           <h1 className="text-4xl md:text-5xl font-bold text-[var(--accent-primary)] tracking-tight">

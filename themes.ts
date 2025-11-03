@@ -15,16 +15,16 @@ export interface Theme {
 
 export const themes: Theme[] = [
   {
-    name: 'Pink',
+    name: 'Orange',
     colors: {
-      '--bg-primary': '#FFF1F2', // bg-pink-50
+      '--bg-primary': '#FFF7ED', // bg-orange-50
       '--bg-secondary': '#FFFFFF', // bg-white
       '--text-primary': '#475569', // text-slate-600
       '--text-secondary': '#64748B', // text-slate-500
-      '--accent-primary': '#EC4899', // text-pink-500
-      '--accent-secondary': '#FCE7F3', // bg-pink-100
-      '--accent-highlight': '#FECDD3', // bg-pink-200
-      '--accent-ring': '#F9A8D4', // ring-pink-300
+      '--accent-primary': '#F97316', // text-orange-500
+      '--accent-secondary': '#FFEDD5', // bg-orange-100
+      '--accent-highlight': '#FED7AA', // bg-orange-200
+      '--accent-ring': '#FDBA74', // ring-orange-300
     }
   },
   {
