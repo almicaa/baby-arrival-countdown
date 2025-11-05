@@ -1,21 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Server koristi Service Role Key
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
+// Direktno u kod stavljamo anon key i URL
+const SUPABASE_URL = 'https://sqjjlvmdfsagklkplwdk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxampsdm1kZnNhZ2tsa3Bsd2RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzMzgxMTgsImV4cCI6MjA3NzkxNDExOH0.D6RQsAbInvkRhiYTDRtZtS8z8Ze4pySRJclLZruZzTU';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  console.log('Request method:', req.method);
+
+  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  try {
-    if (req.method === 'GET') {
+  if (req.method === 'GET') {
+    try {
       const { data, error } = await supabase
         .from('monthly_images')
         .select('*')
@@ -23,61 +26,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (error) throw error;
 
+      console.log('Fetched images:', data);
       return res.status(200).json(data || []);
+    } catch (error: any) {
+      console.error('Error fetching images:', error);
+      return res.status(500).json({ error: 'Failed to fetch images', details: error.message });
     }
+  }
 
-    if (req.method === 'POST') {
+  if (req.method === 'POST') {
+    try {
       const { month_number, image_data } = req.body;
+      console.log('Uploading month:', month_number);
 
       if (!month_number || !image_data)
         return res.status(400).json({ error: 'Missing month_number or image_data' });
 
-      // Convert Base64 to buffer
       const base64Data = image_data.replace(/^data:image\/\w+;base64,/, '');
       const buffer = Buffer.from(base64Data, 'base64');
-
-      // Detect file extension
       const matches = image_data.match(/^data:image\/(\w+);base64,/);
       const fileExt = matches ? matches[1] : 'jpg';
       const fileName = `month-${month_number}-${Date.now()}.${fileExt}`;
 
-      // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('preg-photos')
-        .upload(fileName, buffer, {
-          contentType: `image/${fileExt}`,
-          cacheControl: '3600',
-          upsert: true,
-        });
+        .upload(fileName, buffer, { contentType: `image/${fileExt}`, upsert: true });
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('preg-photos')
-        .getPublicUrl(fileName);
+      const { data: { publicUrl } } = supabase.storage.from('preg-photos').getPublicUrl(fileName);
 
-      // Save to database
       const { data, error: dbError } = await supabase
         .from('monthly_images')
-        .upsert({
-          month_number,
-          image_url: publicUrl,
-          file_path: fileName,
-          mime_type: `image/${fileExt}`,
-          file_size: buffer.length,
-        }, { onConflict: 'month_number' })
+        .upsert({ month_number, image_url: publicUrl, file_path: fileName, mime_type: `image/${fileExt}`, file_size: buffer.length }, { onConflict: 'month_number' })
         .select()
         .single();
 
       if (dbError) throw dbError;
 
+      console.log('Uploaded image:', data);
       return res.status(200).json(data);
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      return res.status(500).json({ error: 'Failed to upload image', details: error.message });
     }
-
-    return res.status(405).json({ error: 'Method not allowed' });
-  } catch (err: any) {
-    console.error('API error:', err);
-    return res.status(500).json({ error: err.message || 'Server error' });
   }
+
+  return res.status(405).json({ error: 'Method not allowed' });
 }
