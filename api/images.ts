@@ -1,11 +1,27 @@
 import { createClient } from '@supabase/supabase-js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Direktno ubacujemo URL i anon key
+// Supabase config (demo/amaterski projekt)
 const supabase = createClient(
   'https://sqjjlvmdfsagklkplwdk.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxampsdm1kZnNhZ2tsa3Bsd2RrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzMzgxMTgsImV4cCI6MjA3NzkxNDExOH0.D6RQsAbInvkRhiYTDRtZtS8z8Ze4pySRJclLZruZzTU'
 );
+
+// Helper za parsiranje bodyja
+async function parseBody(req: VercelRequest) {
+  return new Promise<any>((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => body += chunk.toString());
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(body));
+      } catch {
+        resolve({});
+      }
+    });
+    req.on('error', reject);
+  });
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('Received request:', req.method, req.url);
@@ -14,9 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'GET') {
     try {
@@ -37,9 +51,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'POST') {
     try {
-      const { month_number, image_data } = req.body;
-      console.log('POST body:', req.body);
+      const body = await parseBody(req);
+      console.log('POST body:', body);
 
+      const { month_number, image_data } = body;
       if (!month_number || !image_data) {
         return res.status(400).json({ error: 'Missing month_number or image_data' });
       }
@@ -53,7 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const { error: uploadError } = await supabase.storage
         .from('preg-photos')
-        .upload(fileName, buffer, { contentType: `image/${fileExt}`, cacheControl: '3600', upsert: true });
+        .upload(fileName, buffer, { contentType: `image/${fileExt}`, upsert: true });
 
       console.log('Upload error:', uploadError);
       if (uploadError) throw uploadError;
