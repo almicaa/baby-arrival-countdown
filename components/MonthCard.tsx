@@ -6,7 +6,8 @@ interface MonthCardProps {
   description: string;
   isCurrent: boolean;
   isPast: boolean;
-  onImageUpload: (monthNumber: number, file: File) => void; // sada šaljemo File
+  onImageUpload: (monthNumber: number, file: File) => void;
+  uploading?: boolean;
   animationStyle: React.CSSProperties;
 }
 
@@ -39,10 +40,11 @@ const MonthCard: React.FC<MonthCardProps> = ({
   isCurrent,
   isPast,
   onImageUpload,
+  uploading = false,
   animationStyle,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  
   const cardBaseClasses =
     'flex flex-col items-center justify-center space-y-2 p-3 rounded-lg transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer group animate-pop-in';
   const currentClasses =
@@ -50,7 +52,7 @@ const MonthCard: React.FC<MonthCardProps> = ({
   const defaultClasses = 'bg-[var(--accent-secondary)]';
   const pastClasses = 'opacity-70';
   const futureClasses = 'opacity-100';
-
+  
   const cardClasses = [
     cardBaseClasses,
     isCurrent ? currentClasses : defaultClasses,
@@ -58,13 +60,15 @@ const MonthCard: React.FC<MonthCardProps> = ({
   ].join(' ');
 
   const handleCardClick = () => {
-    fileInputRef.current?.click();
+    if (!uploading) {
+      fileInputRef.current?.click();
+    }
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
-      onImageUpload(monthNumber, file); // šaljemo File objekt
+      onImageUpload(monthNumber, file);
     }
   };
 
@@ -75,7 +79,7 @@ const MonthCard: React.FC<MonthCardProps> = ({
       onClick={handleCardClick}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && handleCardClick()}
+      onKeyDown={(e) => e.key === 'Enter' && !uploading && handleCardClick()}
       aria-label={`Month ${monthNumber}: ${description}. Click to upload image.`}
     >
       <input
@@ -85,6 +89,7 @@ const MonthCard: React.FC<MonthCardProps> = ({
         className="hidden"
         accept="image/*"
         aria-hidden="true"
+        disabled={uploading}
       />
       <div className="relative">
         <img
@@ -93,7 +98,11 @@ const MonthCard: React.FC<MonthCardProps> = ({
           className="w-16 h-16 rounded-full object-cover border-2 border-white"
         />
         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 flex items-center justify-center transition-all duration-300 rounded-full">
-          <CameraIcon />
+          {uploading ? (
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          ) : (
+            <CameraIcon />
+          )}
         </div>
       </div>
       <div className="text-center">

@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import MonthCard from './MonthCard';
 import { MONTHS_DATA } from '../constants';
-import type { MonthData } from '../types';
-import { supabase } from '../src/supabaseClient';
-
 
 interface MonthsProgressBarProps {
   currentMonth: number;
 }
 
-const MonthsProgressBar: React.FC<MonthsProgressBarProps> = ({ currentMonth }) => {
+interface MonthImage {
+  month_number: number;
+  image_url: string;
+}
 
+const MonthsProgressBar: React.FC<MonthsProgressBarProps> = ({ currentMonth }) => {
   const [monthImages, setMonthImages] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [uploadingMonth, setUploadingMonth] = useState<number | null>(null);
@@ -21,21 +22,23 @@ const MonthsProgressBar: React.FC<MonthsProgressBarProps> = ({ currentMonth }) =
 
   const fetchImages = async () => {
     try {
-      const { data, error } = await supabase
-        .from('monthly_images')
-        .select('*')
-        .order('month_number');
-
-      if (error) throw error;
-
+      const response = await fetch('/api/images');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch images');
+      }
+      
+      const data: MonthImage[] = await response.json();
+      
       const imagesMap = data.reduce((acc, item) => {
         acc[item.month_number] = item.image_url;
         return acc;
       }, {} as Record<number, string>);
-
+      
       setMonthImages(imagesMap);
     } catch (error) {
       console.error('Error fetching images:', error);
+      alert('Failed to load images. Please refresh the page.');
     } finally {
       setLoading(false);
     }
@@ -45,36 +48,45 @@ const MonthsProgressBar: React.FC<MonthsProgressBarProps> = ({ currentMonth }) =
     try {
       setUploadingMonth(monthNumber);
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `month-${monthNumber}-${Date.now()}.${fileExt}`;
+      // Convert file to base64
+      const reader = new FileReader();
+      
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
 
-      const { error: uploadError } = await supabase.storage
-        .from('preg-photos')
-        .upload(fileName, file, { upsert: true });
+      const imageData = await base64Promise;
 
-      if (uploadError) throw uploadError;
+      // Optimistic update
+      setMonthImages(prev => ({ ...prev, [monthNumber]: imageData }));
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('preg-photos')
-        .getPublicUrl(fileName);
-
-      const { error: dbError } = await supabase
-        .from('monthly_images')
-        .upsert({
+      // Upload via API
+      const response = await fetch('/api/images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           month_number: monthNumber,
-          image_url: publicUrl,
-          file_path: fileName,
-          file_size: file.size,
-          mime_type: file.type
-        }, { onConflict: 'month_number' });
+          image_data: imageData
+        })
+      });
 
-      if (dbError) throw dbError;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.details || 'Upload failed');
+      }
 
-      setMonthImages(prev => ({ ...prev, [monthNumber]: publicUrl }));
-    } catch (error) {
+      const result = await response.json();
+      
+      // Update with server URL
+      setMonthImages(prev => ({ ...prev, [monthNumber]: result.image_url }));
+      
+    } catch (error: any) {
       console.error('Error uploading image:', error);
-      alert('Upload failed, please try again.');
-      fetchImages(); 
+      alert(`Failed to upload image: ${error.message}`);
+      // Revert optimistic update
+      fetchImages();
     } finally {
       setUploadingMonth(null);
     }
