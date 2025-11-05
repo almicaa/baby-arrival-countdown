@@ -47,8 +47,7 @@ const MonthCard: React.FC<MonthCardProps> = ({
 
   const cardBaseClasses =
     'flex flex-col items-center justify-center space-y-2 p-3 rounded-lg transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer group animate-pop-in';
-  const currentClasses =
-    'bg-[var(--accent-highlight)] scale-110 shadow-lg ring-4 ring-[var(--accent-ring)]';
+  const currentClasses = 'bg-[var(--accent-highlight)] scale-110 shadow-lg ring-4 ring-[var(--accent-ring)]';
   const defaultClasses = 'bg-[var(--accent-secondary)]';
   const pastClasses = 'opacity-70';
   const futureClasses = 'opacity-100';
@@ -60,13 +59,11 @@ const MonthCard: React.FC<MonthCardProps> = ({
   ].join(' ');
 
   const handleCardClick = () => {
-    if (!uploading) {
-      fileInputRef.current?.click();
-    }
+    if (!uploading) fileInputRef.current?.click();
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
       onImageUpload(monthNumber, file);
     }
@@ -88,7 +85,6 @@ const MonthCard: React.FC<MonthCardProps> = ({
         onChange={handleFileChange}
         className="hidden"
         accept="image/*"
-        aria-hidden="true"
         disabled={uploading}
       />
       <div className="relative">
@@ -106,18 +102,10 @@ const MonthCard: React.FC<MonthCardProps> = ({
         </div>
       </div>
       <div className="text-center">
-        <p
-          className={`font-bold text-sm whitespace-nowrap ${
-            isCurrent ? 'text-white' : 'text-[var(--text-secondary)]'
-          }`}
-        >
+        <p className={`font-bold text-sm whitespace-nowrap ${isCurrent ? 'text-white' : 'text-[var(--text-secondary)]'}`}>
           Month {monthNumber}
         </p>
-        <p
-          className={`text-xs italic ${
-            isCurrent ? 'text-white/90' : 'text-[var(--text-secondary)] opacity-80'
-          }`}
-        >
+        <p className={`text-xs italic ${isCurrent ? 'text-white/90' : 'text-[var(--text-secondary)] opacity-80'}`}>
           {description}
         </p>
       </div>

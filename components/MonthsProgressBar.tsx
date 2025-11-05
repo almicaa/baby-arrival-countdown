@@ -24,18 +24,15 @@ const MonthsProgressBar: React.FC<MonthsProgressBarProps> = ({ currentMonth }) =
     try {
       const response = await fetch('/api/images');
       if (!response.ok) throw new Error('Failed to fetch images');
-
       const data: MonthImage[] = await response.json();
-
       const imagesMap = data.reduce((acc, item) => {
         acc[item.month_number] = item.image_url;
         return acc;
       }, {} as Record<number, string>);
-
       setMonthImages(imagesMap);
-    } catch (error) {
-      console.error('Error fetching images:', error);
-      alert('Failed to load images. Please refresh the page.');
+    } catch (err) {
+      console.error('Error fetching images:', err);
+      alert('Failed to load images. Refresh page.');
     } finally {
       setLoading(false);
     }
@@ -45,7 +42,6 @@ const MonthsProgressBar: React.FC<MonthsProgressBarProps> = ({ currentMonth }) =
     try {
       setUploadingMonth(monthNumber);
 
-      // Convert file to base64
       const reader = new FileReader();
       const base64Promise = new Promise<string>((resolve, reject) => {
         reader.onload = () => resolve(reader.result as string);
@@ -57,38 +53,29 @@ const MonthsProgressBar: React.FC<MonthsProgressBarProps> = ({ currentMonth }) =
       // Optimistic update
       setMonthImages(prev => ({ ...prev, [monthNumber]: imageData }));
 
-      // Upload via API
-      const response = await fetch('/api/images', {
+      const res = await fetch('/api/images', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ month_number: monthNumber, image_data: imageData })
+        body: JSON.stringify({ month_number: monthNumber, image_data: imageData }),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.details || 'Upload failed');
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err?.error || 'Upload failed');
       }
 
-      const result = await response.json();
-
-      // Update with server URL
+      const result = await res.json();
       setMonthImages(prev => ({ ...prev, [monthNumber]: result.image_url }));
-    } catch (error: any) {
-      console.error('Error uploading image:', error);
-      alert(`Failed to upload image: ${error.message}`);
-      fetchImages(); // revert optimistic update
+    } catch (err: any) {
+      console.error('Error uploading image:', err);
+      alert(`Upload failed: ${err.message}`);
+      fetchImages(); // revert
     } finally {
       setUploadingMonth(null);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <p className="text-lg">Loading images...</p>
-      </div>
-    );
-  }
+  if (loading) return <p>Loading images...</p>;
 
   return (
     <div className="grid grid-cols-3 md:grid-cols-9 gap-4">
