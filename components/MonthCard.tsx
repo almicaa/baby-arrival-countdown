@@ -44,7 +44,7 @@ const MonthCard: React.FC<MonthCardProps> = ({
   animationStyle,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const cardBaseClasses =
     'flex flex-col items-center justify-center space-y-2 p-3 rounded-lg transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] cursor-pointer group animate-pop-in';
   const currentClasses =
@@ -52,7 +52,7 @@ const MonthCard: React.FC<MonthCardProps> = ({
   const defaultClasses = 'bg-[var(--accent-secondary)]';
   const pastClasses = 'opacity-70';
   const futureClasses = 'opacity-100';
-  
+
   const cardClasses = [
     cardBaseClasses,
     isCurrent ? currentClasses : defaultClasses,

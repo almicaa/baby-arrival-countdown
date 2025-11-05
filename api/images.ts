@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+// Supabase client koristi service_role key, jer je ovo backend (serverless function)
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_KEY!
@@ -12,57 +13,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Handle preflight
+  // Preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  // GET - Fetch all images
+  // GET - fetch all images
   if (req.method === 'GET') {
     try {
       const { data, error } = await supabase
         .from('monthly_images')
-        .select('*')
+        .select('month_number, image_url')
         .order('month_number');
 
       if (error) throw error;
 
       return res.status(200).json(data || []);
-    } catch (error: any) {
-      console.error('Error fetching images:', error);
-      return res.status(500).json({ 
-        error: 'Failed to fetch images', 
-        details: error.message 
-      });
+    } catch (err: any) {
+      console.error('Error fetching images:', err);
+      return res.status(500).json({ error: 'Failed to fetch images', details: err.message });
     }
   }
 
-  // POST - Upload new image
+  // POST - upload new image
   if (req.method === 'POST') {
     try {
       const { month_number, image_data } = req.body;
 
-      // Validation
       if (!month_number || !image_data) {
-        return res.status(400).json({ 
-          error: 'Missing month_number or image_data' 
-        });
+        return res.status(400).json({ error: 'Missing month_number or image_data' });
       }
 
       if (month_number < 1 || month_number > 9) {
-        return res.status(400).json({ 
-          error: 'month_number must be between 1-9' 
-        });
+        return res.status(400).json({ error: 'month_number must be between 1-9' });
       }
 
       // Convert base64 to buffer
       const base64Data = image_data.replace(/^data:image\/\w+;base64,/, '');
       const buffer = Buffer.from(base64Data, 'base64');
-      
+
       // Detect file extension
       const matches = image_data.match(/^data:image\/(\w+);base64,/);
       const fileExt = matches ? matches[1] : 'jpg';
-      
+
       const fileName = `month-${month_number}-${Date.now()}.${fileExt}`;
 
       // Upload to Supabase Storage
@@ -81,8 +74,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .from('preg-photos')
         .getPublicUrl(fileName);
 
-      // Save to database
-      const { data, error: dbError } = await supabase
+      // Save to database (upsert)
+      const { error: dbError } = await supabase
         .from('monthly_images')
         .upsert({
           month_number,
@@ -90,21 +83,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           file_path: fileName,
           mime_type: `image/${fileExt}`,
           file_size: buffer.length
-        }, {
-          onConflict: 'month_number'
-        })
-        .select()
-        .single();
+        }, { onConflict: 'month_number' });
 
       if (dbError) throw dbError;
 
-      return res.status(200).json(data);
-    } catch (error: any) {
-      console.error('Error uploading image:', error);
-      return res.status(500).json({ 
-        error: 'Failed to upload image', 
-        details: error.message 
-      });
+      // Always return JSON with image_url
+      return res.status(200).json({ image_url: publicUrl });
+    } catch (err: any) {
+      console.error('Error uploading image:', err);
+      return res.status(500).json({ error: 'Failed to upload image', details: err.message });
     }
   }
 

@@ -23,18 +23,15 @@ const MonthsProgressBar: React.FC<MonthsProgressBarProps> = ({ currentMonth }) =
   const fetchImages = async () => {
     try {
       const response = await fetch('/api/images');
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch images');
-      }
-      
+      if (!response.ok) throw new Error('Failed to fetch images');
+
       const data: MonthImage[] = await response.json();
-      
+
       const imagesMap = data.reduce((acc, item) => {
         acc[item.month_number] = item.image_url;
         return acc;
       }, {} as Record<number, string>);
-      
+
       setMonthImages(imagesMap);
     } catch (error) {
       console.error('Error fetching images:', error);
@@ -50,13 +47,11 @@ const MonthsProgressBar: React.FC<MonthsProgressBarProps> = ({ currentMonth }) =
 
       // Convert file to base64
       const reader = new FileReader();
-      
       const base64Promise = new Promise<string>((resolve, reject) => {
         reader.onload = () => resolve(reader.result as string);
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
-
       const imageData = await base64Promise;
 
       // Optimistic update
@@ -66,10 +61,7 @@ const MonthsProgressBar: React.FC<MonthsProgressBarProps> = ({ currentMonth }) =
       const response = await fetch('/api/images', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          month_number: monthNumber,
-          image_data: imageData
-        })
+        body: JSON.stringify({ month_number: monthNumber, image_data: imageData })
       });
 
       if (!response.ok) {
@@ -78,15 +70,13 @@ const MonthsProgressBar: React.FC<MonthsProgressBarProps> = ({ currentMonth }) =
       }
 
       const result = await response.json();
-      
+
       // Update with server URL
       setMonthImages(prev => ({ ...prev, [monthNumber]: result.image_url }));
-      
     } catch (error: any) {
       console.error('Error uploading image:', error);
       alert(`Failed to upload image: ${error.message}`);
-      // Revert optimistic update
-      fetchImages();
+      fetchImages(); // revert optimistic update
     } finally {
       setUploadingMonth(null);
     }
