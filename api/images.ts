@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-// Supabase client koristi service_role key, jer je ovo backend (serverless function)
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
+// ⚠️ Ovo koristimo samo u backendu, frontend NE vidi ovaj key
+const SUPABASE_URL = 'https://sqjjlvmdfsagklkplwdk.supabase.co';
+const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxampsdm1kZnNhZ2tsa3Bsd2RrIiwicm9sZSIsInNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjMzODExOCwiZXhwIjoyMDc3OTE0MTE4fQ.BHUUjyKfRTYxMGUeYXF-fTVWiysINxgeEsvFt-VkJHE';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
@@ -13,87 +13,69 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // GET - fetch all images
   if (req.method === 'GET') {
     try {
       const { data, error } = await supabase
         .from('monthly_images')
-        .select('month_number, image_url')
+        .select('*')
         .order('month_number');
 
       if (error) throw error;
-
+      console.log('Fetched images:', data);
       return res.status(200).json(data || []);
     } catch (err: any) {
-      console.error('Error fetching images:', err);
+      console.error('Error fetching images:', err.message);
       return res.status(500).json({ error: 'Failed to fetch images', details: err.message });
     }
   }
 
-  // POST - upload new image
   if (req.method === 'POST') {
     try {
       const { month_number, image_data } = req.body;
+      if (!month_number || !image_data) return res.status(400).json({ error: 'Missing month_number or image_data' });
 
-      if (!month_number || !image_data) {
-        return res.status(400).json({ error: 'Missing month_number or image_data' });
-      }
-
-      if (month_number < 1 || month_number > 9) {
-        return res.status(400).json({ error: 'month_number must be between 1-9' });
-      }
-
-      // Convert base64 to buffer
       const base64Data = image_data.replace(/^data:image\/\w+;base64,/, '');
       const buffer = Buffer.from(base64Data, 'base64');
-
-      // Detect file extension
       const matches = image_data.match(/^data:image\/(\w+);base64,/);
       const fileExt = matches ? matches[1] : 'jpg';
-
       const fileName = `month-${month_number}-${Date.now()}.${fileExt}`;
 
-      // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('preg-photos')
         .upload(fileName, buffer, {
           contentType: `image/${fileExt}`,
           cacheControl: '3600',
-          upsert: true
+          upsert: true,
         });
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('preg-photos')
-        .getPublicUrl(fileName);
+      const { data: { publicUrl } } = supabase.storage.from('preg-photos').getPublicUrl(fileName);
 
-      // Save to database (upsert)
-      const { error: dbError } = await supabase
+      const { data, error: dbError } = await supabase
         .from('monthly_images')
         .upsert({
           month_number,
           image_url: publicUrl,
           file_path: fileName,
           mime_type: `image/${fileExt}`,
-          file_size: buffer.length
-        }, { onConflict: 'month_number' });
+          file_size: buffer.length,
+        }, { onConflict: 'month_number' })
+        .select()
+        .single();
 
       if (dbError) throw dbError;
+      console.log('Uploaded image for month', month_number, data);
 
-      // Always return JSON with image_url
-      return res.status(200).json({ image_url: publicUrl });
+      return res.status(200).json(data);
     } catch (err: any) {
-      console.error('Error uploading image:', err);
+      console.error('Error uploading image:', err.message);
       return res.status(500).json({ error: 'Failed to upload image', details: err.message });
     }
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
 }
+console.log("Radi");
